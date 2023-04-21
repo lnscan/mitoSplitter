@@ -1,0 +1,2 @@
+example_data/sc_mix_sorted.bam filter=lfs diff=lfs merge=lfs -text
+example_data/p1154_bulk.bam filter=lfs diff=lfs merge=lfs -text
