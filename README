@@ -7,3 +7,5 @@ mitoSplitter
 	2.1 cd example_data
 	2.2 sh test.sh
 3. Obtain result in example_data/example_result directory
+4. Apply to your data
+	sh mitoSplitter_pipeline.sh -i <sc_bam> -b <barcodes_list> -o <result_dir> -l <bulk_bam_list>
