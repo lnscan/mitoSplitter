@@ -1,4 +1,4 @@
-mitoSplitter
+mitoSplitter : A mitochondrial variants-based method for sample-demultiplexing of single-cell sequencing data
 1. Install environment
 	1.1 conda create -n mitoSplitter python==3.9.13
 	1.2 pip install -r requirement.txt
@@ -9,3 +9,22 @@ mitoSplitter
 3. Obtain result in example_data/example_result directory
 4. Apply to your data
 	sh mitoSplitter_pipeline.sh -i <sc_bam> -b <barcodes_list> -o <result_dir> -l <bulk_bam_list>
+	
+Usage:
+	sh mitoSpliter_pipeline.sh <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-h]
+Ordering options:
+	-i	input bam file generated from single-cell RNA-seq
+	-b	barcode list file, one barcode per line
+	-o	name of directory for mitoSpliter output files
+
+Other options:
+	-r	mitochondrial variant allele frequency matrix file for all samples, must be set unless -l is set
+	-l	input bam files list generated from bulk RNA-seq for all samples, one bam file per line, must be set unless -r is set
+	-m	mitochondrial reference genome fasta, default = GRCh38_MT.fasta
+	-c	mitochondrial reference genome id, default = MT
+	-t	max threads to use, default = 50
+	-f	used to extract cell barcode from bam file, default = CB
+	-q	minimum base quality to be considered in bam file, used for variant calling, default = 20
+	-a	minimum alignment quality to be considered in bam file, used for variant calling, default = 20
+	-g	benchmark file used for performance validation, one barcode and the corresponding cluster per line
+	-h	print this help and exit
