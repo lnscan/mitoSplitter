@@ -5,7 +5,7 @@ func() {
 	echo "Usage:"
 	echo "	sh $0 <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-h]"
 	echo "Description:"
-	echo "	mitoSplitter pipeline to multiplex barcoded single cell"
+	echo "	A mitochondrial variants-based method for sample-demultiplexing of single-cell sequencing data"
 	echo "Ordering options:"
 	echo "	-i	input bam file"
 	echo "	-b	barcode list file, one barcode per line"
