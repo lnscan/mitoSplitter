@@ -1,8 +1,9 @@
 mitoSplitter : A mitochondrial variants-based method for sample-demultiplexing of single-cell sequencing data
 1. Install environment
 	1.1 conda create -n mitoSplitter python==3.9.13
-	1.2 pip install -r requirement.txt
-	1.3 make sure samtools can be used directly
+	1.2 conda activate mitoSplitter
+	1.3 pip install -r requirement.txt
+	1.4 make sure samtools can be used directly
 2. Test pipeline in example_data directory
 	2.1 cd example_data
 	2.2 sh test.sh
