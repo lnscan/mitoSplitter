@@ -9,9 +9,9 @@ import anndata as ad
 import scrublet as scr 
 import matplotlib.pyplot as plt 
 
-prefixid = sys.argv[1]
-removebc = sys.argv[2]
-counttxt = sys.argv[3]
+prefixid = sys.argv[1] ## output dir
+removebc = sys.argv[2] ## remove barcodes list before doublet detection
+countdir = sys.argv[3] ## /path/to/filtered_feature_bc_matrix
 
 ## read remove bc list
 rmbc = []
@@ -20,7 +20,7 @@ with open(removebc, 'r') as rr:
         rmbc.append(line.rstrip())
 
 ## read cellranger output
-data = sc.read_10x_mtx(counttxt + "/filtered_feature_bc_matrix", cache = True)
+data = sc.read_10x_mtx(countdir, cache = True)
 
 data = data[~data.obs.index.isin(rmbc), :]
 sc.pp.highly_variable_genes(data, flavor='seurat_v3', span=0.3, n_top_genes=2000) ## calculate hvf info for each gene in data

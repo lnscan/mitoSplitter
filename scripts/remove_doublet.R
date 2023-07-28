@@ -9,7 +9,7 @@ merfile <- args[1]
 outdir <- args[2]
 removebcf <- args[3]
 
-merdf0 <- read.table(merfile, header = T, row.names = 1, sep = "\t")
+merdf0 <- fread(merfile, header = T, sep = "\t")
 merdf <- as.data.frame(merdf0)
 merdf <- merdf[,-1]
 merdf[is.na(merdf)] <- 0

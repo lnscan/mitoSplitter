@@ -11,6 +11,7 @@ func() {
 	echo "  -o  name of directory for mitoSplitter output files"
     echo ""
     echo "Other options:"
+	echo "  -s  warning threshold for correlation between bulk samples, used to signal samples with similar genetic backgrounds"
     echo "  -m  mitochondrial reference genome fasta, default = GRCh38_MT.fasta"
     echo "  -t  max threads to use, default = 50"
     echo "  -q  minimum base quality to be considered in bam file, used for variant calling, default = 10"
@@ -22,14 +23,16 @@ func() {
 
 CURRENT_DIR=`dirname $0`
 MITOFA="${CURRENT_DIR}/../mito_fastas/GRCh38_MT.fasta"
+WARCOR=0.65
 PREFIX="."
 THREADS=50
 BASEQUAL=10
 ALIGNQUAL=10
 BULKLIST=""
 
-while getopts 'l:o:m:t:q:a:h' OPT;do
+while getopts 's:l:o:m:t:q:a:h' OPT;do
     case $OPT in
+        s) WARCOR="$OPTARG";;
         l) BULKLIST="$OPTARG";;
         o) PREFIX="$OPTARG";;
         m) MITOFA="$OPTARG";;
@@ -70,6 +73,6 @@ do
 	echo "${resdir}/${sam}.af.txt" >> ${PREFIX}/bulk_af.list
 
 done < $BULKLIST
-python ${CURRENT_DIR}/merge_af_bulk.py ${PREFIX}/bulk_af.list $MITOFA $resdir
-
+python ${CURRENT_DIR}/merge_af_bulk.py ${PREFIX}/bulk_af.list $MITOFA $PREFIX
+python ${CURRENT_DIR}/check_bulk_cor.py ${PREFIX}/bulk_all.af.txt $WARCOR
 

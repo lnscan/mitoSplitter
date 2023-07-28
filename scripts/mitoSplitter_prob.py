@@ -23,6 +23,7 @@ from sklearn.semi_supervised import LabelSpreading
 bulk_af = sys.argv[1] ## bulk RNA-seq mtRNA matrix
 mix_af  = sys.argv[2] ## single-cell RNA-seq mtRNA matrix
 prefix  = sys.argv[3] ## output dir
+sinlist = sys.argv[4] ## singlet cell barcode list
 
 start = time.time()
 readstart = time.gmtime()
@@ -33,6 +34,9 @@ if not os.path.exists(prefix):
 
 bulk = sc.read_csv(bulk_af, delimiter = "\t", first_column_names = True).T
 mix = sc.read_csv(mix_af, delimiter = "\t", first_column_names = True).T
+singlet_bcs = pd.read_csv(sinlist, header=None) ## read singlet barcode list here if known
+inter_bcs = np.intersect1d(singlet_bcs, mix.obs_names)
+mix = mix[inter_bcs, :]
 
 ## identification of highly variable features(sites) from bulk matrix
 sc.pp.highly_variable_genes(bulk, flavor='seurat_v3', span=0.3, n_top_genes=2000)
@@ -53,45 +57,6 @@ plt.savefig(prefix + '/mitoSplitter.variant_selection.pdf')
 plt.close()
 
 ## Overlap of bulk hvf and single-cell variants
-
-#Remove singlets using Scrublet 
-#mix_dge = sys.argv[4] ## single-cell RNA-seq gene expression matrix
-#dge = sc.read(mix_dge).T
-#expected_dbl_rate = {0:[0.000,0.008],
-#                     1:[0.008,0.008],
-#                     2:[0.016,0.007],
-#                     3:[0.023,0.008],
-#                     4:[0.031,0.008],
-#                     5:[0.039,0.007],
-#                     6:[0.046,0.008],
-#                     7:[0.054,0.007],
-#                     8:[0.061,0.008],
-#                     9:[0.069,0.007],
-#                     10:[0.076,0.008]}
-#bc_num_raw = dge.n_obs
-## cell/var filtering
-#sc.pp.filter_cells(dge, min_genes=200)
-#sc.pp.filter_genes(dge, min_cells=3)
-## expected_doublet_rate calculating
-#bc_num = dge.n_obs
-#nn = int(bc_num/1000)
-#nn2 = expected_dbl_rate[nn]
-#nn3 = nn2[0]+nn2[1]*(bc_num-nn*1000)/1000
-#nn3 = round(nn3,3)
-## Scrublet object initializing
-#scrub = scr.Scrublet(dge.X, expected_doublet_rate=nn3)
-## predict doubelts
-#doublet_scores, predicted_doublets = scrub.scrub_doublets(min_counts=2,min_cells=3)
-## output
-#doublets_info = pd.DataFrame( {'Barcode':dge.obs_names,
-#                               'Predicted_doublets':predicted_doublets,
-#                               'Doublet_scores':doublet_scores} )
-#doublets_info.to_csv('mitoSplitter.doublets_info.scrublet.txt',index=False,header=True,sep='\t')
-## singlet/doublet barcodes
-#singlet_bcs = doublets_info.Barcode[( bool(i) for i in (1-doublets_info.Predicted_doublets) )]
-#doublet_bcs = doublets_info.Barcode[doublets_info.Predicted_doublets]
-
-#singlet_bcs = pd.read_csv('xx/scrublet/single_bcs.list',header=None) ## read singlet barcode list here if known
 singlet_bcs = mix.obs_names
 hvf2 = np.intersect1d(hvf, mix.var.index)
 bcs2 = np.intersect1d(singlet_bcs, mix.obs_names)
@@ -158,7 +123,7 @@ Y_pred_prob_max = Y_pred_prob.max(axis = 1)
 Y_pred_prob_cluster = [label_decoding[i+1] for i in Y_pred_prob_maxid]
 Y_pred = pd.DataFrame({'Cluster_id' : Y_pred_prob_maxid,
                        'Cluster' : Y_pred_prob_cluster,
-                       'prob' : Y_pred_prob_max})
+                       'Prob' : Y_pred_prob_max})
 Y_pred.index = cells
 Y_pred.to_csv(prefix + '/mitoSplitter.clusters.txt',index=True,header=True,sep='\t')
 
