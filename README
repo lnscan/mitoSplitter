@@ -12,7 +12,7 @@ mitoSplitter : A mitochondrial variants-based method for sample-demultiplexing o
 	sh mitoSplitter_pipeline.sh -i <sc_bam> -b <barcodes_list> -o <result_dir> -l <bulk_bam_list>
 	
 Usage:
-	sh mitoSpliter_pipeline.sh <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-h]
+	sh mitoSpliter_pipeline.sh <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-s cor_value] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-p matrix_dir] [-d] [-h]
 Ordering options:
 	-i	input bam file generated from single-cell RNA-seq
 	-b	barcode list file, one barcode per line
@@ -21,6 +21,7 @@ Ordering options:
 Other options:
 	-r	mitochondrial variant allele frequency matrix file for all samples, must be set unless -l is set
 	-l	input bam files list generated from bulk RNA-seq for all samples, one bam file per line, must be set unless -r is set
+	-s  warning threshold for correlation between bulk samples, used to signal samples with similar genetic backgrounds, default = 0.65
 	-m	mitochondrial reference genome fasta, default = GRCh38_MT.fasta
 	-c	mitochondrial reference genome id, default = MT
 	-t	max threads to use, default = 50
@@ -28,4 +29,6 @@ Other options:
 	-q	minimum base quality to be considered in bam file, used for variant calling, default = 20
 	-a	minimum alignment quality to be considered in bam file, used for variant calling, default = 20
 	-g	benchmark file used for performance validation, one barcode and the corresponding cluster per line
+	-p  filtered feature bc matrix directory for removing doublets using scrublet, python package scrublet needs to be installed, default = FALSE
+	-d  remove doublets using Favg Gaussian fitted model, R package mixtools needs to be installed, default = FALSE
 	-h	print this help and exit

@@ -3,7 +3,7 @@
 ## Command parameters
 func() {
 	echo "Usage:"
-	echo "	sh $0 <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-h]"
+	echo "	sh $0 <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-s cor_value] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-p matrix_dir] [-d] [-h]"
 	echo "Description:"
 	echo "	A mitochondrial variants-based method for sample-demultiplexing of single-cell sequencing data"
 	echo "Ordering options:"
@@ -14,6 +14,7 @@ func() {
 	echo "Other options:"
 	echo "	-r	mitochondrial variant allele frequency matrix file for all samples, must be set unless -l is set"
 	echo "	-l	bulk RNA-seq mapping bam list file for all samples, one bam file per line, must be set unless -r is set"
+	echo "	-s	warning threshold for correlation between bulk samples, used to signal samples with similar genetic backgrounds, default = 0.65"
 	echo "	-m	mitochondrial reference genome fasta, default = GRCh38_MT.fasta"
 	echo "	-c	mitochondrial reference genome id, default = MT"
 	echo "	-t	max threads to use, default = 50"
@@ -21,6 +22,8 @@ func() {
 	echo "	-q	minimum base quality to be considered in bam file, used for variant calling, default = 20"
 	echo "	-a	minimum alignment quality to be considered in bam file, used for variant calling, default = 20"
 	echo "	-g	benchmark file used for performance validation, one barcode and the corresponding cluster per line"
+	echo "	-p	filtered feature bc matrix directory for removing doublets using scrublet, python package scrublet needs to be installed, default = FALSE"
+	echo "	-d	remove doublets using Favg Gaussian fitted model, R package mixtools needs to be installed, default = FALSE"
 	echo "	-h	print this help and exit"
 	echo ""
 	exit -1
@@ -28,22 +31,27 @@ func() {
 
 CURRENT_DIR=`dirname $0`
 MITOFA="${CURRENT_DIR}/mito_fastas/GRCh38_MT.fasta"
+BLANK="${CURRENT_DIR}/scripts/blank.list"
 MITOCHR="MT"
 PREFIX="."
 THREADS=50
 BARCODE_TAG="CB"
 BASEQUAL=20
 ALIGNQUAL=20
+CORWAR=0.65
 BULKAF=""
 BULKLIST=""
+SCRUBLET="FALSE"
+FAVG="FALSE"
 
-while getopts 'i:b:o:r:l:m:c:t:f:q:a:g:h' OPT;do
+while getopts 'i:b:o:r:l:s:m:c:t:f:q:a:g:p:dh' OPT;do
 	case $OPT in
 		i) BAMFILE="$OPTARG";;
 		b) BARCODE="$OPTARG";;
 		o) PREFIX="$OPTARG";;
 		r) BULKAF="$OPTARG";;
 		l) BULKLIST="$OPTARG";;
+		s) WARCOR="$OPTARG";;
 		m) MITOFA="$OPTARG";;
 		c) MITOCHR="$OPTARG";;
 		t) THREADS="$OPTARG";;
@@ -51,6 +59,8 @@ while getopts 'i:b:o:r:l:m:c:t:f:q:a:g:h' OPT;do
 		q) BASEQUAL="$OPTARG";;
 		a) ALIGNQUAL="$OPTARG";;
 	    g) GOLD="$OPTARG";;
+	    p) SCRUBLET="$OPTARG";;
+	    d) FAVG="TRUE";;
 		h) func;;
 		?) func;;
 	esac
@@ -59,14 +69,16 @@ done
 ## Set path to samtools if needed
 #samtools=/path/to/samtools
 
+mkdir -p $PREFIX
+
 ## Set or generate bulk mtRNA matrix
 if [[ -n "$BULKAF" ]];then
     echo "Set bulk mtRNA matrix : $BULKAF"
+	python ${CURRENT_DIR}/scripts/check_bulk_cor.py $BULKAF $CORWAR
 elif [[ -n "$BULKLIST" ]];then
 	echo "Generate bulk mtRNA matrix..."
 	sh ${CURRENT_DIR}/scripts/generate_bulk_mtrna_matrix.sh -l $BULKLIST -o $PREFIX &
-	BULKDIR=`dirname $BULKLIST`
-	BULKAF="$BULKDIR/bulk_all.af.txt"
+	BULKAF="$PREFIX/bulk_all.af.txt"
 else
 	echo "ERROR:Bulk mtRNA matrix path and bulk RNA-seq bam list file cannot both be missing!"
 	echo ""
@@ -76,8 +88,13 @@ fi
 
 echo "Start mitoSplitter pipeline at `date`"
 ## Extract mitochondrial bam file
-mkdir -p $PREFIX
-samtools view -@ $THREADS -h $BAMFILE $MITOCHR -b -o ${PREFIX}/mt.bam
+if [[ ! -e "${BAMFILE}.bai" ]];then
+	samtools sort -@ $THREADS $BAMFILE -o ${PREFIX}/sorted.bam
+	samtools index -@ $THREADS ${PREFIX}/sorted.bam
+	samtools view -@ $THREADS -h ${PREFIX}/sorted.bam $MITOCHR -b -o ${PREFIX}/mt.bam ## make sure $BAMFILE is sorted
+else
+	samtools view -@ $THREADS -h $BAMFILE $MITOCHR -b -o ${PREFIX}/mt.bam ## make sure $BAMFILE is sorted
+fi
 
 ## Remapping
 python ${CURRENT_DIR}/scripts/renamer.py --bam ${PREFIX}/mt.bam --barcodes $BARCODE --cell_tag ${BARCODE_TAG} --out ${PREFIX}/fq.fq
@@ -144,11 +161,29 @@ rm ${PREFIX}/block*_all.*.txt
 rm ${PREFIX}/whole_all.[ATCG]*txt
 rm ${PREFIX}/whole_all.coverage*txt
 
-## mitoSplitter demultiplexing
+## Remove doublets, optional
 wait
+
 sc_af="${PREFIX}/whole_all.af.txt"
+if [[ "$SCRUBLET" != "FALSE" ]];then
+	python ${CURRENT_DIR}/scripts/remove_doublet_by_scrublet_mtx.py $PREFIX $BLANK $SCRUBLET
+	sinlist="${PREFIX}/scrublet_singlet.list"
+	if [[ "$FAVG" != "FALSE" ]];then
+		Rscript ${CURRENT_DIR}/scripts/remove_doublet.R $sc_af $PREFIX ${PREFIX}/scrublet_doublet.list
+		sinlist="${PREFIX}/Favg_Gaussian_fitted_singlet.list"
+	fi
+else
+	sinlist=$BARCODE
+	if [[ "$FAVG" != "FALSE" ]];then
+		Rscript ${CURRENT_DIR}/scripts/remove_doublet.R $sc_af $PREFIX $BLANK
+		sinlist="${PREFIX}/Favg_Gaussian_fitted_singlet.list"
+	fi
+fi
+		
+## mitoSplitter demultiplexing
+
 resdir="${PREFIX}/mitoSplitter"
-python ${CURRENT_DIR}/scripts/mitoSplitter_prob.py $BULKAF $sc_af $resdir
+python ${CURRENT_DIR}/scripts/mitoSplitter_prob.py $BULKAF $sc_af $resdir $sinlist
 
 ## mitoSplitter perform validation (available if gold standard file provided)
-python ${CURRENT_DIR}/scripts/mitoSplitter_info.py $GOLD $resdir
+python ${CURRENT_DIR}/scripts/mitoSplitter_prob_info.py $GOLD $resdir
