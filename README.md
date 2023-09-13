@@ -23,13 +23,18 @@ Make sure samtools can be used directly.
 ```bash
 sh mitoSplitter_pipeline.sh -h ## show help information
 ```
+```txt
+Usage:
 	sh mitoSplitter_pipeline.sh <-i input.bam> <-b barcode.list> <-o out_dir> [-r bulk_matrix] [-l bulk_bam_list] [-s cor_value] [-m mito.fasta] [-t threads] [-f barcode_tag] [-q base_quality] [-a alignment_quality] [-g gold_file] [-p matrix_dir] [-d] [-h]
+ 
 Description:
-	A mitochondrial variants-based method for sample-demultiplexing of single-cell sequencing data
+	A mitochondrial variants-based method for efficient demultiplexing of pooled single-cell RNA-seq.
+ 
 Ordering options:
 	-i	input bam file
 	-b	barcode list file, one barcode per line
 	-o	name of directory for mitoSplitter output files
+ 
 
 Other options:
 	-r	mitochondrial variant allele frequency matrix file for all samples, must be set unless -l is set
@@ -45,6 +50,7 @@ Other options:
 	-p	filtered feature bc matrix directory for removing doublets using scrublet, python package scrublet needs to be installed, default = FALSE
 	-d	remove doublets using Favg Gaussian fitted model, R package mixtools needs to be installed, default = FALSE
 	-h	print this help and exit
+```
 
 ## Example
 ```bash
