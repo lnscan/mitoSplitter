@@ -55,11 +55,10 @@ Other options:
 ## Example
 ```bash
 cd example_data
-sh test.sh ## result in ./example_result2
+sh test.sh ## result in ./example_result
 ```
 
 ## Citation
-```txt
 Lin X, Chen Y, Lin L, Yin K, Cheng R, Lin X, Wang X, Guo Y, Wu Z, Zhang Y, Li J, Yang C, Song J. mitoSplitter: A mitochondrial variants-based method for efficient demultiplexing of pooled single-cell RNA-seq. Proc Natl Acad Sci U S A. 2023 Sep 26;120(39):e2307722120. doi: 10.1073/pnas.2307722120. Epub 2023 Sep 19. PMID: 37725654; PMCID: PMC10523499.
-```
+
 
