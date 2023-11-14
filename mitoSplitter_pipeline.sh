@@ -186,4 +186,6 @@ resdir="${PREFIX}/mitoSplitter"
 python ${CURRENT_DIR}/scripts/mitoSplitter_prob.py $BULKAF $sc_af $resdir $sinlist
 
 ## mitoSplitter perform validation (available if gold standard file provided)
-python ${CURRENT_DIR}/scripts/mitoSplitter_prob_info.py $GOLD $resdir
+if [[ -n "$GOLD" ]];then
+	python ${CURRENT_DIR}/scripts/mitoSplitter_prob_info.py $GOLD $resdir
+fi
